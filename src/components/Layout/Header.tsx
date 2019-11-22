@@ -97,23 +97,6 @@ const Header: React.FunctionComponent<HeaderProps> = props => {
   const autologin = true
   const cookies = new Cookies()
 
-  // const onInit = () => {
-  //   //TODO: NICE TO HAVE: Find out how to re-evaluate based on state change
-  //   console.log(auth)
-  //   const token = cookies.get('DevCenter.token')
-  //   const decoded = parseJwt(token)
-  //   if (decoded) {
-  //     setUsername(decoded.usr)
-  //     setFirstName(cookies.get('DevCenter.firstName'))
-  //     setEmail(cookies.get('DevCenter.email'))
-  //     setAuth(!isTokenExpired(token))
-  //   } else {
-  //     setFirstName('')
-  //     setEmail('')
-  //     setAuth(null)
-  //   }
-  // }
-
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
   }
@@ -128,7 +111,6 @@ const Header: React.FunctionComponent<HeaderProps> = props => {
       cookieName => {
         cookies.remove(cookieName, {
           path: '/',
-          domain: window.location.hostname,
         })
       }
     )
