@@ -86,7 +86,6 @@ interface HeaderState {
 }
 
 const Header: React.FunctionComponent<HeaderProps> = props => {
-  // Header extends React.Component<HeaderProps, HeaderState> {
   const [auth, setAuth] = useState(false)
   const [anchorEl, setAnchorEl] = useState(null)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -98,22 +97,22 @@ const Header: React.FunctionComponent<HeaderProps> = props => {
   const autologin = true
   const cookies = new Cookies()
 
-  const onInit = () => {
-    //TODO: NICE TO HAVE: Find out how to re-evaluate based on state change
-    console.log(auth)
-    const token = cookies.get('DevCenter.token')
-    const decoded = parseJwt(token)
-    if (decoded) {
-      setUsername(decoded.usr)
-      setFirstName(cookies.get('DevCenter.firstName'))
-      setEmail(cookies.get('DevCenter.email'))
-      setAuth(!isTokenExpired(token))
-    } else {
-      setFirstName('')
-      setEmail('')
-      setAuth(null)
-    }
-  }
+  // const onInit = () => {
+  //   //TODO: NICE TO HAVE: Find out how to re-evaluate based on state change
+  //   console.log(auth)
+  //   const token = cookies.get('DevCenter.token')
+  //   const decoded = parseJwt(token)
+  //   if (decoded) {
+  //     setUsername(decoded.usr)
+  //     setFirstName(cookies.get('DevCenter.firstName'))
+  //     setEmail(cookies.get('DevCenter.email'))
+  //     setAuth(!isTokenExpired(token))
+  //   } else {
+  //     setFirstName('')
+  //     setEmail('')
+  //     setAuth(null)
+  //   }
+  // }
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -133,16 +132,26 @@ const Header: React.FunctionComponent<HeaderProps> = props => {
         })
       }
     )
-    // onInit()
+    setAuth(false)
   }
 
   useEffect(() => {
-    onInit()
+    debugger
+    if (!auth) {
+      const token = cookies.get('DevCenter.token')
+      const decoded = parseJwt(token)
+      if (decoded) {
+        setUsername(decoded.usr)
+        setFirstName(cookies.get('DevCenter.firstName'))
+        setEmail(cookies.get('DevCenter.email'))
+        setAuth(!isTokenExpired(token))
+      } else {
+        setFirstName('')
+        setEmail('')
+        setAuth(null)
+      }
+    }
   }, [auth])
-
-  // public componentDidMount() {
-  //   onInit()
-  // }
 
   const goToPortal = (route: string) => (event: React.MouseEvent) => {
     navigate(route)
@@ -166,21 +175,6 @@ const Header: React.FunctionComponent<HeaderProps> = props => {
     }
   }
 
-  // public render() {
-  //   const { classes, location, width, data } = this.props
-  //   const { anchorEl, auth, showResults } = this.state
-  //   const isMobile = width !== 'md' && width !== 'lg' && width !== 'xl'
-  //   const currentApiVersion = data.allMdx.nodes[0].frontmatter.apiVersion
-  //   let activeTab = 'docs'
-  // if (location && location.pathname) {
-  //   var partialPath = location.pathname.split('/')[1]
-  //   if (!partialPath) return
-  //   if (partialPath === 'blog' || partialPath === 'api-reference') {
-  //     activeTab = partialPath
-  //   } else {
-  //     activeTab = 'rest'
-  //   }
-  // }
   return (
     <React.Fragment>
       <AppBar color="primary" className={classes.root}>
