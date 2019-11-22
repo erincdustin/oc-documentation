@@ -27,7 +27,7 @@ import {
 import IconButton from '@material-ui/core/IconButton'
 import { Menu as MenuIcon, Close as CloseIcon } from '@material-ui/icons'
 import { Link, graphql, StaticQuery } from 'gatsby'
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Cookies from 'universal-cookie'
 import ocLogo from '../../assets/images/four51-badge--flame-white.svg'
 import Gravatar from 'react-gravatar'
@@ -84,142 +84,140 @@ interface HeaderState {
   email: string
   showResults: boolean
 }
-class Header extends React.Component<HeaderProps, HeaderState> {
-  state = {
-    auth: false,
-    anchorEl: null,
-    mobileOpen: false,
-    username: '',
-    firstName: '',
-    email: '',
-    showResults: false,
-  }
-  private readonly autologin = true
-  private readonly cookies = new Cookies()
 
-  public onInit() {
+const Header: React.FunctionComponent<HeaderProps> = props => {
+  // Header extends React.Component<HeaderProps, HeaderState> {
+  const [auth, setAuth] = useState(false)
+  const [anchorEl, setAnchorEl] = useState(null)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [username, setUsername] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [email, setEmail] = useState('')
+  const [showResults, setShowResults] = useState(false)
+
+  const autologin = true
+  const cookies = new Cookies()
+
+  const onInit = () => {
     //TODO: NICE TO HAVE: Find out how to re-evaluate based on state change
-    const token = this.cookies.get('DevCenter.token')
+    console.log(auth)
+    const token = cookies.get('DevCenter.token')
     const decoded = parseJwt(token)
     if (decoded) {
-      this.setState({
-        username: decoded.usr,
-        firstName: this.cookies.get('DevCenter.firstName'),
-        email: this.cookies.get('DevCenter.email'),
-        auth: !isTokenExpired(token),
-      })
+      setUsername(decoded.usr)
+      setFirstName(cookies.get('DevCenter.firstName'))
+      setEmail(cookies.get('DevCenter.email'))
+      setAuth(!isTokenExpired(token))
     } else {
-      this.setState({
-        firstName: '',
-        email: '',
-        auth: null,
-      })
+      setFirstName('')
+      setEmail('')
+      setAuth(null)
     }
   }
 
-  public handleMenu = (event: React.MouseEvent<HTMLElement>) => {
-    this.setState({ anchorEl: event.currentTarget })
+  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget)
   }
 
-  public handleClose = () => {
-    this.setState({ anchorEl: null })
+  const handleClose = () => {
+    setAnchorEl(null)
   }
 
-  public handleLogout = () => {
-    this.setState({ anchorEl: null })
+  const handleLogout = () => {
+    setAnchorEl(null)
     ;['DevCenter.token', 'DevCenter.firstName', 'DevCenter.email'].forEach(
       cookieName => {
-        this.cookies.remove(cookieName, {
+        cookies.remove(cookieName, {
           path: '/',
           domain: window.location.hostname,
         })
       }
     )
-    this.onInit()
+    // onInit()
   }
 
-  public componentDidMount() {
-    this.onInit()
-  }
+  useEffect(() => {
+    onInit()
+  }, [auth])
 
-  public goToPortal = (route: string) => (event: React.MouseEvent) => {
+  // public componentDidMount() {
+  //   onInit()
+  // }
+
+  const goToPortal = (route: string) => (event: React.MouseEvent) => {
     navigate(route)
   }
 
-  public toggleNav = (mobileOpen: boolean) => () => {
-    this.setState({ mobileOpen })
+  const toggleNav = (mobileOpen: boolean) => () => {
+    setMobileOpen(mobileOpen)
   }
 
-  public render() {
-    const { classes, location, width, data } = this.props
-    const { anchorEl, auth, showResults } = this.state
-    const isMobile = width !== 'md' && width !== 'lg' && width !== 'xl'
-    const currentApiVersion = data.allMdx.nodes[0].frontmatter.apiVersion
-    let activeTab = 'docs'
-    if (location && location.pathname) {
-      var partialPath = location.pathname.split('/')[1]
-      if (!partialPath) return
-      if (partialPath === 'blog' || partialPath === 'api-reference') {
-        activeTab = partialPath
-      } else {
-        activeTab = 'rest'
-      }
+  const { classes, location, width, data } = props
+  const isMobile = width !== 'md' && width !== 'lg' && width !== 'xl'
+  const currentApiVersion = data.allMdx.nodes[0].frontmatter.apiVersion
+  let activeTab = 'docs'
+  if (location && location.pathname) {
+    var partialPath = location.pathname.split('/')[1]
+    if (!partialPath) return
+    if (partialPath === 'blog' || partialPath === 'api-reference') {
+      activeTab = partialPath
+    } else {
+      activeTab = 'rest'
     }
-    return (
-      <React.Fragment>
-        <AppBar color="primary" className={classes.root}>
-          <Toolbar className={classes.toolbar}>
-            <Hidden mdUp>
-              <IconButton
-                color="inherit"
-                edge="start"
-                onClick={this.toggleNav(!this.state.mobileOpen)}
-              >
-                <MenuIcon />
-              </IconButton>
-            </Hidden>
-            <Link to="/" className={classes.logo}>
-              <img src={ocLogo}></img>
-            </Link>
-            <Hidden smDown>
-              <Tabs
-                value={activeTab}
-                className={classes.tabs}
-                classes={{
-                  flexContainer: classes.tabsContainer,
-                  indicator: classes.tabsIndicator,
-                }}
-              >
-                {MenuItems.MainNavigation.map((item, index) => {
-                  const {
-                    mobileMenu,
-                    authRequired,
-                    disableRipple,
-                    value,
-                    label,
-                    to,
-                    isPortalLink,
-                  } = item
-                  if (!mobileMenu && !authRequired) {
-                    if (isPortalLink) {
-                      return (
-                        <Tab
-                          disableRipple={disableRipple}
-                          value={value}
-                          label={label}
-                          classes={{
-                            root: classes.tab,
-                            selected: classes.navTabSelected,
-                          }}
-                          onClick={
-                            auth
-                              ? this.goToPortal(to)
-                              : this.goToPortal('/console/login/')
-                          }
-                          key={index}
-                        ></Tab>
-                      )
-                    }
+  }
+
+  // public render() {
+  //   const { classes, location, width, data } = this.props
+  //   const { anchorEl, auth, showResults } = this.state
+  //   const isMobile = width !== 'md' && width !== 'lg' && width !== 'xl'
+  //   const currentApiVersion = data.allMdx.nodes[0].frontmatter.apiVersion
+  //   let activeTab = 'docs'
+  // if (location && location.pathname) {
+  //   var partialPath = location.pathname.split('/')[1]
+  //   if (!partialPath) return
+  //   if (partialPath === 'blog' || partialPath === 'api-reference') {
+  //     activeTab = partialPath
+  //   } else {
+  //     activeTab = 'rest'
+  //   }
+  // }
+  return (
+    <React.Fragment>
+      <AppBar color="primary" className={classes.root}>
+        <Toolbar className={classes.toolbar}>
+          <Hidden mdUp>
+            <IconButton
+              color="inherit"
+              edge="start"
+              onClick={toggleNav(!mobileOpen)}
+            >
+              <MenuIcon />
+            </IconButton>
+          </Hidden>
+          <Link to="/" className={classes.logo}>
+            <img src={ocLogo}></img>
+          </Link>
+          <Hidden smDown>
+            <Tabs
+              value={activeTab}
+              className={classes.tabs}
+              classes={{
+                flexContainer: classes.tabsContainer,
+                indicator: classes.tabsIndicator,
+              }}
+            >
+              {MenuItems.MainNavigation.map((item, index) => {
+                const {
+                  mobileMenu,
+                  authRequired,
+                  disableRipple,
+                  value,
+                  label,
+                  to,
+                  isPortalLink,
+                } = item
+                if (!mobileMenu && !authRequired) {
+                  if (isPortalLink) {
                     return (
                       <Tab
                         disableRipple={disableRipple}
@@ -229,276 +227,279 @@ class Header extends React.Component<HeaderProps, HeaderState> {
                           root: classes.tab,
                           selected: classes.navTabSelected,
                         }}
-                        component={Link}
-                        to={to}
+                        onClick={
+                          auth ? goToPortal(to) : goToPortal('/console/login/')
+                        }
                         key={index}
                       ></Tab>
                     )
                   }
-                  if (!mobileMenu && authRequired) {
-                    return (
-                      auth && (
-                        <Tab
-                          disableRipple={disableRipple}
-                          classes={{
-                            root: classes.tab,
-                            selected: classes.navTabSelected,
-                          }}
-                          value={value}
-                          label={label}
-                          component={Link}
-                          to={to}
-                        ></Tab>
-                      )
+                  return (
+                    <Tab
+                      disableRipple={disableRipple}
+                      value={value}
+                      label={label}
+                      classes={{
+                        root: classes.tab,
+                        selected: classes.navTabSelected,
+                      }}
+                      component={Link}
+                      to={to}
+                      key={index}
+                    ></Tab>
+                  )
+                }
+                if (!mobileMenu && authRequired) {
+                  return (
+                    auth && (
+                      <Tab
+                        disableRipple={disableRipple}
+                        classes={{
+                          root: classes.tab,
+                          selected: classes.navTabSelected,
+                        }}
+                        value={value}
+                        label={label}
+                        component={Link}
+                        to={to}
+                      ></Tab>
                     )
-                  }
-                })}
-              </Tabs>
-            </Hidden>
-            <Hidden smDown>
-              <div className={classes.navbarRight}>
-                <ChipLink
-                  color="secondary"
-                  label={`v${currentApiVersion}`}
-                  to={`/release-notes/v${currentApiVersion}`}
-                ></ChipLink>
-                {auth ? (
-                  <React.Fragment>
-                    <Button color="inherit" variant="outlined" size="small">
-                      Support
-                    </Button>
-                    <IconButton
-                      color="inherit"
-                      onClick={this.handleMenu}
-                      className={classes.iconButton}
-                    >
-                      <Avatar alt={this.state.username}>
-                        <Gravatar size={40} email={this.state.email} />
-                      </Avatar>
-                    </IconButton>
-                    <Popper
-                      placement="bottom-end"
-                      open={Boolean(anchorEl)}
-                      anchorEl={anchorEl}
-                      transition
-                      disablePortal
-                    >
-                      {({ TransitionProps, placement }) => (
-                        <Grow
-                          {...TransitionProps}
-                          style={{
-                            transformOrigin:
-                              placement === 'bottom-end'
-                                ? 'right top'
-                                : 'right bottom',
-                          }}
-                        >
-                          <Paper>
-                            <ClickAwayListener onClickAway={this.handleClose}>
-                              <div>
-                                <Box paddingX={2} paddingY={1}>
-                                  <Typography>
-                                    Signed in as
-                                    <br />
-                                    <strong>{this.state.username}</strong>
-                                  </Typography>
-                                </Box>
-                                <Divider />
-                                <MenuList className={classes.menuList}>
-                                  {MenuItems.OrgControls.map((item, index) => (
+                  )
+                }
+              })}
+            </Tabs>
+          </Hidden>
+          <Hidden smDown>
+            <div className={classes.navbarRight}>
+              <ChipLink
+                color="secondary"
+                label={`v${currentApiVersion}`}
+                to={`/release-notes/v${currentApiVersion}`}
+              ></ChipLink>
+              {auth ? (
+                <React.Fragment>
+                  <Button color="inherit" variant="outlined" size="small">
+                    Support
+                  </Button>
+                  <IconButton
+                    color="inherit"
+                    onClick={handleMenu}
+                    className={classes.iconButton}
+                  >
+                    <Avatar alt={username}>
+                      <Gravatar size={40} email={email} />
+                    </Avatar>
+                  </IconButton>
+                  <Popper
+                    placement="bottom-end"
+                    open={Boolean(anchorEl)}
+                    anchorEl={anchorEl}
+                    transition
+                    disablePortal
+                  >
+                    {({ TransitionProps, placement }) => (
+                      <Grow
+                        {...TransitionProps}
+                        style={{
+                          transformOrigin:
+                            placement === 'bottom-end'
+                              ? 'right top'
+                              : 'right bottom',
+                        }}
+                      >
+                        <Paper>
+                          <ClickAwayListener onClickAway={handleClose}>
+                            <div>
+                              <Box paddingX={2} paddingY={1}>
+                                <Typography>
+                                  Signed in as
+                                  <br />
+                                  <strong>{username}</strong>
+                                </Typography>
+                              </Box>
+                              <Divider />
+                              <MenuList className={classes.menuList}>
+                                {MenuItems.OrgControls.map((item, index) => (
+                                  <MenuItem
+                                    key={index}
+                                    className={classes.menuItem}
+                                  >
+                                    {item.label}
+                                  </MenuItem>
+                                ))}
+                                <Divider className={classes.menuListDivider} />
+                                {MenuItems.AuthControls.map((item, index) => {
+                                  const { label, to } = item
+                                  return (
                                     <MenuItem
                                       key={index}
                                       className={classes.menuItem}
                                     >
-                                      {item.label}
+                                      {label}
                                     </MenuItem>
-                                  ))}
-                                  <Divider
-                                    className={classes.menuListDivider}
-                                  />
-                                  {MenuItems.AuthControls.map((item, index) => {
-                                    const { label, to } = item
-                                    return (
-                                      <MenuItem
-                                        key={index}
-                                        className={classes.menuItem}
-                                      >
-                                        {label}
-                                      </MenuItem>
-                                    )
-                                  })}
-                                  <MenuItem
-                                    className={classes.menuItem}
-                                    onClick={this.handleLogout}
-                                  >
-                                    Sign Out
-                                  </MenuItem>
-                                </MenuList>
-                              </div>
-                            </ClickAwayListener>
-                          </Paper>
-                        </Grow>
-                      )}
-                    </Popper>
-                  </React.Fragment>
-                ) : (
-                  <React.Fragment>
-                    <Button
-                      onClick={this.goToPortal('/console/login')}
-                      color="inherit"
-                      size="small"
-                    >
-                      Login
-                    </Button>
-                    <Button
-                      onClick={this.goToPortal('/console/login')}
-                      variant="outlined"
-                      color="inherit"
-                      size="small"
-                    >
-                      Sign-Up
-                    </Button>
-                  </React.Fragment>
-                )}
-              </div>
-            </Hidden>
-            <DocSearch
-              classes={{
-                searchBox: `${isMobile ? classes.mobileSearchBox : undefined}`,
-                searchBoxInput: `${
-                  isMobile ? classes.mobileSearchInput : undefined
-                }`,
-              }}
-              placeholder={isMobile && 'Search...'}
-              darkMode={true}
-              noPopper={isMobile}
-            ></DocSearch>
-          </Toolbar>
-        </AppBar>
-        <Drawer
-          open={this.state.mobileOpen}
-          onClose={this.toggleNav(false)}
-          classes={{ paper: classes.drawerPaper, root: classes.drawerRoot }}
-          anchor="left"
+                                  )
+                                })}
+                                <MenuItem
+                                  className={classes.menuItem}
+                                  onClick={handleLogout}
+                                >
+                                  Sign Out
+                                </MenuItem>
+                              </MenuList>
+                            </div>
+                          </ClickAwayListener>
+                        </Paper>
+                      </Grow>
+                    )}
+                  </Popper>
+                </React.Fragment>
+              ) : (
+                <React.Fragment>
+                  <Button
+                    onClick={goToPortal('/console/login')}
+                    color="inherit"
+                    size="small"
+                  >
+                    Login
+                  </Button>
+                  <Button
+                    onClick={goToPortal('/console/login')}
+                    variant="outlined"
+                    color="inherit"
+                    size="small"
+                  >
+                    Sign-Up
+                  </Button>
+                </React.Fragment>
+              )}
+            </div>
+          </Hidden>
+          <DocSearch
+            classes={{
+              searchBox: `${isMobile ? classes.mobileSearchBox : undefined}`,
+              searchBoxInput: `${
+                isMobile ? classes.mobileSearchInput : undefined
+              }`,
+            }}
+            placeholder={isMobile && 'Search...'}
+            darkMode={true}
+            noPopper={isMobile}
+          ></DocSearch>
+        </Toolbar>
+      </AppBar>
+      <Drawer
+        open={mobileOpen}
+        onClose={toggleNav(false)}
+        classes={{ paper: classes.drawerPaper, root: classes.drawerRoot }}
+        anchor="left"
+      >
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          paddingRight="1rem"
         >
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            paddingRight="1rem"
-          >
-            <Box>
-              <IconButton aria-label="close" color="inherit">
-                <CloseIcon
-                  fontSize="large"
-                  onClick={this.toggleNav(!this.state.mobileOpen)}
-                />
-              </IconButton>
+          <Box>
+            <IconButton aria-label="close" color="inherit">
+              <CloseIcon fontSize="large" onClick={toggleNav(!mobileOpen)} />
+            </IconButton>
+          </Box>
+          {auth ? (
+            <Box padding="1rem 0rem">
+              <Avatar alt={username}>
+                <Gravatar size={40} email={email} />
+              </Avatar>
             </Box>
-            {auth ? (
-              <Box padding="1rem 0rem">
-                <Avatar alt={this.state.username}>
-                  <Gravatar size={40} email={this.state.email} />
-                </Avatar>
-              </Box>
-            ) : (
-              <Box padding="1rem 0rem">
-                <Button
-                  onClick={this.goToPortal('/console/login')}
-                  variant="text"
-                  color="inherit"
-                  className={classes.mr1}
-                  size="small"
-                >
-                  Login
-                </Button>
+          ) : (
+            <Box padding="1rem 0rem">
+              <Button
+                onClick={goToPortal('/console/login')}
+                variant="text"
+                color="inherit"
+                className={classes.mr1}
+                size="small"
+              >
+                Login
+              </Button>
 
-                <Button
-                  onClick={this.goToPortal('/console/login')}
-                  variant="outlined"
-                  color="inherit"
-                  size="small"
+              <Button
+                onClick={goToPortal('/console/login')}
+                variant="outlined"
+                color="inherit"
+                size="small"
+              >
+                Sign-Up
+              </Button>
+            </Box>
+          )}
+        </Box>
+        <List className={classes.mobileMenuList}>
+          {MenuItems.MainNavigation.map(item => {
+            const { mobileMenu, authRequired, to, label, isPortalLink } = item
+            if (isPortalLink) {
+              return (
+                <ListItem
+                  onClick={
+                    auth ? goToPortal(to) : goToPortal('/console/login/')
+                  }
                 >
-                  Sign-Up
-                </Button>
+                  {label}
+                </ListItem>
+              )
+            }
+            if (
+              (!mobileMenu || mobileMenu) &&
+              !authRequired &&
+              to !== '/release-notes/v'
+            ) {
+              return <ListItemLink to={to}>{label}</ListItemLink>
+            }
+            if (authRequired) {
+              return auth && <ListItemLink to={to}>{label}</ListItemLink>
+            }
+            if (to === '/release-notes/v') {
+              return (
+                <ListItemLink to={to + currentApiVersion}>{label}</ListItemLink>
+              )
+            }
+          })}
+          {auth ? (
+            <React.Fragment>
+              <Divider />
+              <Box padding="1rem 0rem 0rem 1rem">
+                <Typography variant="body1" className={classes.signedInAs}>
+                  Signed in as {username}
+                </Typography>
               </Box>
-            )}
-          </Box>
-          <List className={classes.mobileMenuList}>
-            {MenuItems.MainNavigation.map(item => {
-              const { mobileMenu, authRequired, to, label, isPortalLink } = item
-              if (isPortalLink) {
-                return (
-                  <ListItem
-                    onClick={
-                      auth
-                        ? this.goToPortal(to)
-                        : this.goToPortal('/console/login/')
-                    }
-                  >
-                    {label}
-                  </ListItem>
-                )
-              }
-              if (
-                (!mobileMenu || mobileMenu) &&
-                !authRequired &&
-                to !== '/release-notes/v'
-              ) {
-                return <ListItemLink to={to}>{label}</ListItemLink>
-              }
-              if (authRequired) {
-                return auth && <ListItemLink to={to}>{label}</ListItemLink>
-              }
-              if (to === '/release-notes/v') {
-                return (
-                  <ListItemLink to={to + currentApiVersion}>
-                    {label}
-                  </ListItemLink>
-                )
-              }
-            })}
-            {auth ? (
-              <React.Fragment>
-                <Divider />
-                <Box padding="1rem 0rem 0rem 1rem">
-                  <Typography variant="body1" className={classes.signedInAs}>
-                    Signed in as {this.state.username}
-                  </Typography>
-                </Box>
-                <MenuList className={classes.menuList}>
-                  {MenuItems.OrgControls.map((item, index) => (
-                    <MenuItem key={index} className={classes.menuItem}>
-                      {item.label}
-                    </MenuItem>
-                  ))}
-                  {MenuItems.AuthControls.map((item, index) => {
-                    const { label, to } = item
-                    return (
-                      <MenuItem key={index} className={classes.menuItem}>
-                        {label}
-                      </MenuItem>
-                    )
-                  })}
-                  <MenuItem
-                    className={classes.menuItem}
-                    onClick={this.handleLogout}
-                  >
-                    Sign Out
+              <MenuList className={classes.menuList}>
+                {MenuItems.OrgControls.map((item, index) => (
+                  <MenuItem key={index} className={classes.menuItem}>
+                    {item.label}
                   </MenuItem>
-                </MenuList>
-              </React.Fragment>
-            ) : (
-              <React.Fragment></React.Fragment>
-            )}
-          </List>
-          <Box padding="1rem">
-            <img className={classes.mobileMenuLogo} src={ocOrange} alt="OC" />
-          </Box>
-        </Drawer>
-      </React.Fragment>
-    )
-  }
+                ))}
+                {MenuItems.AuthControls.map((item, index) => {
+                  const { label, to } = item
+                  return (
+                    <MenuItem key={index} className={classes.menuItem}>
+                      {label}
+                    </MenuItem>
+                  )
+                })}
+                <MenuItem className={classes.menuItem} onClick={handleLogout}>
+                  Sign Out
+                </MenuItem>
+              </MenuList>
+            </React.Fragment>
+          ) : (
+            <React.Fragment></React.Fragment>
+          )}
+        </List>
+        <Box padding="1rem">
+          <img className={classes.mobileMenuLogo} src={ocOrange} alt="OC" />
+        </Box>
+      </Drawer>
+    </React.Fragment>
+  )
 }
 
 const drawerWidth = '25vw'
