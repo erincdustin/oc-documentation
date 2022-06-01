@@ -1,0 +1,3 @@
+# Only process MDX or MD files
+\.mdx$
+\.md$

@@ -1,0 +1,61 @@
+name: Spell checking
+on:
+  pull_request_target:
+  issue_comment:
+    types: [created]
+
+jobs:
+  spelling:
+    name: Spell checking
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout-merge
+      if: "contains(github.event_name, 'pull_request')"
+      uses: actions/checkout@v2
+      with:
+        ref: refs/pull/${{github.event.pull_request.number}}/merge
+    - name: checkout
+      if: ${{ github.event_name == 'push' ||
+        (
+          contains(github.event.comment.body, '@check-spelling-bot apply')
+        ) }}
+      uses: actions/checkout@v2
+    - uses: check-spelling/check-spelling@main
+      id: spelling
+      if: ${{ github.event_name != 'issue_comment' ||
+        (
+          contains(github.event.comment.body, '@check-spelling-bot apply')
+        ) }}
+      with:
+        only_check_changed_files: 1
+        check_extra_dictionaries: 1
+        experimental_path: content
+        extra_dictionaries:
+          cspell:ada/ada.txt
+          cspell:aws/aws.txt
+          cspell:bash/bash-words.txt
+          cspell:companies/companies.txt
+          cspell:cpp/cpp.txt
+          cspell:csharp/csharp.txt
+          cspell:css/css.txt
+          cspell:django/django.txt
+          cspell:dotnet/dotnet.txt
+          cspell:el/src/Greek.txt
+          cspell:elixir/elixir.txt
+          cspell:en_GB/src/wordsEnGb.txt
+          cspell:filetypes/filetypes.txt
+          cspell:fonts/fonts.txt
+          cspell:fullstack/fullstack.txt
+          cspell:golang/go.txt
+          cspell:haskell/haskell.txt
+          cspell:html/html.txt
+          cspell:java/java.txt
+          cspell:latex/latex.txt
+          cspell:lua/lua.txt
+          cspell:node/node.txt
+          cspell:npm/npm.txt
+          cspell:php/php.txt
+          cspell:python/python.txt
+          cspell:ruby/ruby.txt
+          cspell:rust/rust.txt
+          cspell:scala/scala.txt
